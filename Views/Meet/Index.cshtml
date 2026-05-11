@@ -1,0 +1,112 @@
+﻿@{
+	ViewData["Title"] = "Видеозвонок - " + ViewBag.GroupName;
+}
+
+<div class="container-fluid mt-4" style="position: relative; z-index: 1;">
+	<div class="row mb-3">
+		<div class="col">
+			<h1>Видеозвонок: @ViewBag.GroupName</h1>
+		</div>
+		<div class="col text-end">
+			<a asp-action="Details" asp-controller="Groups" asp-route-id="@ViewBag.GroupId" class="btn btn-secondary">Назад к группе</a>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-12">
+			<div class="card" style="position: relative; z-index: 1;">
+				<div class="card-body p-0">
+					<div id="meet-container" style="height: 70vh; min-height: 600px; position: relative; z-index: 1;"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script src='https://meet.jit.si/external_api.js'></script>
+
+	<script>
+		window.onload = function(){
+			if (typeof JitsiMeetExternalAPI === 'undefined') {
+				console.error('Jitsi Meet API не загружен!');
+				document.querySelector('#meet-container').innerHTML =
+					'<div class="alert alert-danger m-3">Ошибка: не удалось загрузить Jitsi Meet. Проверьте подключение к интернету.</div>';
+				return;
+			}
+
+			const domain = 'meet.jit.si';
+			const options = {
+				roomName: '@ViewBag.RoomName',
+				width: '100%',
+				height: '100%',
+				parentNode: document.querySelector('#meet-container'),
+				userInfo: {
+					displayName: '@ViewBag.UserName',
+					email: '@ViewBag.Email'
+				},
+				configOverwrite: {
+					startWithAudioMuted: false,
+					startWithVideoMuted: false,
+					enableWelcomePage: false,
+					enableClosePage: false,
+					prejoinPageEnabled: false
+				},
+				interfaceConfigOverwrite: {
+					TOOLBAR_BUTTONS: [
+						'microphone',
+						'camera',
+						'closedcaptions',
+						'desktop',
+						'fullscreen',
+						'fodeviceselection',
+						'hangup',
+						'profile',
+						'chat',
+						'recording',
+						'livestreaming',
+						'etherpad',
+						'sharedvideo',
+						'settings',
+						'raisehand',
+						'videoquality',
+						'filmstrip',
+						'feedback',
+						'stats',
+						'shortcuts',
+						'tileview',
+						'download',
+						'help',
+						'mute-everyone'
+					],
+					DISABLE_DOMINANT_SPEAKER_INDICATOR: false,
+					SHOW_JITSI_WATERMARK: false
+				}
+			};
+
+			try {
+				const api = new JitsiMeetExternalAPI(domain, options);
+
+				api.addListener('videoConferenceJoined', (event) => {
+					console.log('Присоединился к конференции:', event);
+				});
+
+				api.addListener('videoConferenceLeft', (event) => {
+					console.log('Покинул конференцию');
+				});
+
+				api.addListener('participantJoined', (event) => {
+					console.log('Новый участник:', event.displayName);
+				});
+
+				api.addListener('participantLeft', (event) => {
+					console.log('Участник покинул:', event.displayName);
+				});
+			} catch (error) {
+				console.error('Ошибка при инициализации Jitsi:', error);
+				document.querySelector('#meet-container').innerHTML =
+					'<div class="alert alert-danger m-3">Ошибка при запуске видеозвонка: ' + error.message + '</div>';
+			}
+		}
+	</script>
+}

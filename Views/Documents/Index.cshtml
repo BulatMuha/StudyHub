@@ -1,0 +1,145 @@
+﻿@model IEnumerable<Diplom_StudyHub.Models.Document>
+@{
+    ViewData["Title"] = "Файлы";
+    var groupId = ViewBag.GroupId as int?;
+    var groupName = ViewBag.GroupName as string;
+}
+
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Файлы группы: @groupName</h1>
+        </div>
+        <div class="col text-end">
+            <a asp-action="Details" asp-controller="Groups" asp-route-id="@groupId" class="btn btn-secondary">
+                Назад к группе
+            </a>
+            <a asp-action="Upload" asp-route-groupId="@groupId" class="btn btn-primary ms-2">
+                Загрузить файл
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="text-muted mb-0">В этой группе пока нет файлов</p>
+                <a asp-action="Upload" asp-route-groupId="@groupId" class="btn btn-primary mt-2">
+                    Загрузить первый файл
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Файл</th>
+                        <th>Описание</th>
+                        <th>Размер</th>
+                        <th>Загрузил</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@item.FileName</strong>
+                            </td>
+                            <td>
+                                @(item.Description ?? "—")
+                            </td>
+                            <td>
+                                @{
+                                    var size = item.FileSize;
+                                    var sizeStr = size < 1024 ? $"{size} Б" :
+                                    size < 1024 * 1024 ? $"{size / 1024:0.0} КБ" :
+                                    $"{size / (1024 * 1024):0.0} МБ";
+                                }
+                                @sizeStr
+                            </td>
+                            <td>@item.Uploader?.UserName</td>
+                            <td>@item.UploadedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Download" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Скачать
+                                    </a>
+                                    @if (User.Identity?.Name == item.Uploader?.UserName)
+                                    {
+                                        <form asp-action="Delete" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="groupId" value="@groupId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Удалить файл?')">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ✅ ПАГИНАЦИЯ -->
+        @if (ViewBag.Pagination != null && ViewBag.Pagination.TotalPages > 1)
+        {
+            <div class="pagination-container mt-3 mb-3">
+                <nav aria-label="Пагинация документов">
+                    <ul class="pagination justify-content-center">
+                        <!-- Первая страница -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="1">
+                                Первая
+                            </a>
+                        </li>
+
+                        <!-- Предыдущая -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@(ViewBag.Pagination.CurrentPage - 1)">
+                                ← Назад
+                            </a>
+                        </li>
+
+                        <!-- Номера страниц -->
+                        @for (int i = 1; i <= ViewBag.Pagination.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == ViewBag.Pagination.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@i">
+                                    @i
+                                </a>
+                            </li>
+                        }
+
+                        <!-- Следующая -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == ViewBag.Pagination.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@(ViewBag.Pagination.CurrentPage + 1)">
+                                Вперёд →
+                            </a>
+                        </li>
+
+                        <!-- Последняя страница -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == ViewBag.Pagination.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@ViewBag.Pagination.TotalPages">
+                                Последняя
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="text-center text-muted mb-3">
+                    <small>Страница @ViewBag.Pagination.CurrentPage из @ViewBag.Pagination.TotalPages (всего @ViewBag.Pagination.TotalItems файлов)</small>
+                </div>
+            </div>
+        }
+    }
+</div>

@@ -1,0 +1,69 @@
+﻿@model Diplom_StudyHub.Models.Lesson
+
+@{
+	ViewData["Title"] = "Редактировать урок";
+	var groupId = ViewBag.GroupId as int?;
+
+	var startTimeValue = Model.StartTime.HasValue
+		? Model.StartTime.Value.ToString("yyyy-MM-ddTHH:mm")
+		: "";
+
+	var endTimeValue = Model.EndTime.HasValue
+		? Model.EndTime.Value.ToString("yyyy-MM-ddTHH:mm")
+		: "";
+
+	var startTimeMin = DateTime.Now.AddMinutes(5).ToString("yyyy-MM-ddTHH:mm");
+
+	var endTimeMin = Model.StartTime.HasValue
+		? Model.StartTime.Value.AddMinutes(1).ToString("yyyy-MM-ddTHH:mm")
+		: startTimeMin;
+}
+
+<div class="container mt-4">
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			<div class="card">
+				<div class="card-header">
+					<h4 class="mb-0">Редактирование урока</h4>
+				</div>
+				<div class="card-body">
+					<form asp-action="Edit" method="post">
+						<input type="hidden" asp-for="Id" />
+						<input type="hidden" asp-for="GroupId" />
+
+						<div class="form-group mb-3">
+							<label class="form-label">Тема урока *</label>
+							<input asp-for="Topic" class="form-control" required />
+						</div>
+						<div class="form-group mb-3">
+							<label class="form-label">Описание</label>
+							<textarea asp-for="Description" class="form-control" rows="3"></textarea>
+						</div>
+						<div class="form-group mb-3">
+							<label class="form-label">Время начала *</label>
+							<input asp-for="StartTime"
+								   type="datetime-local"
+								   class="form-control"
+								   value="@startTimeValue"
+								   min="@startTimeMin"
+								   required />
+						</div>
+						<div class="form-group mb-3">
+							<label class="form-label">Время окончания *</label>
+							<input asp-for="EndTime"
+								   type="datetime-local"
+								   class="form-control"
+								   value="@endTimeValue"
+								   min="@endTimeMin"
+								   required />
+						</div>
+						<div class="form-group">
+							<button type="submit" class="btn btn-primary">Сохранить</button>
+							<a asp-action="Index" asp-route-groupId="@groupId" class="btn btn-secondary ms-2">Отмена</a>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

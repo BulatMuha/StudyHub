@@ -1,0 +1,38 @@
+﻿@model Diplom_StudyHub.Models.Lesson
+
+@{
+	ViewData["Title"] = "Удалить урок";
+}
+
+<div class="container mt-4">
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			<div class="card">
+				<div class="card-header bg-danger text-white">
+					<h4 class="mb-0">Удаление урока</h4>
+				</div>
+				<div class="card-body">
+					<p class="text-danger">
+						<strong>Вы уверены что хотите удалить этот урок?</strong>
+					</p>
+					<div class="mb-3">
+						<strong>Тема:</strong> @Model.Topic
+					</div>
+					@if (!string.IsNullOrEmpty(Model.Description))
+					{
+						<div class="mb-3">
+							<strong>Описание:</strong> @Model.Description
+						</div>
+					}
+					<form asp-action="Delete" method="post">
+						<input type="hidden" asp-for="Id" />
+						<input type="hidden" name="groupId" value="@Model.GroupId" />
+
+						<button type="submit" class="btn btn-danger">Да, удалить</button>
+						<a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary ms-2">Отмена</a>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

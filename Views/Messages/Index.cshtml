@@ -1,0 +1,412 @@
+﻿@model IEnumerable<Diplom_StudyHub.Models.Message>
+@{
+    ViewData["Title"] = "Чат";
+    var groupId = ViewBag.GroupId as int?;
+    var currentUserId = ViewBag.CurrentUserId as string;
+}
+
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Чат группы</h1>
+        </div>
+        <div class="col text-end">
+            <a asp-action="Details" asp-controller="Groups" asp-route-id="@groupId" class="btn btn-secondary">
+                Назад к группе
+            </a>
+        </div>
+    </div>
+
+    <!-- ✅ INDIКАТОР ПОДКЛЮЧЕНИЯ -->
+    <div id="connectionStatus" class="alert alert-info py-2 mb-3">
+        <small>🔄 Подключение к чату...</small>
+    </div>
+
+    <div class="chat-container">
+        <div id="loadMoreContainer" class="text-center p-2" style="display: none;">
+            <button id="loadMoreBtn" class="btn btn-sm btn-outline-secondary">
+                Загрузить ещё сообщения
+            </button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            @if (!Model.Any())
+            {
+                <div class="text-center text-muted mt-5">
+                    <p>Пока нет сообщений :(</p>
+                    <p class="small">Будь первым кто напишет!</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var message in Model)
+                {
+                    var isOwn = currentUserId == message.SenderId;
+                    var senderName = message.Sender != null ?
+                    (message.Sender is Diplom_StudyHub.Models.ApplicationUser appUser ?
+                    $"{appUser.LastName} {appUser.FirstName}" :
+                    message.Sender.UserName) :
+                    "Пользователь";
+
+                    <div class="chat-message @(isOwn ? "own" : "other")"
+                         data-message-id="@message.Id"
+                         data-is-own="@isOwn.ToString().ToLower()">
+                        <div class="chat-message-header">
+                            <span class="chat-message-sender">@senderName</span>
+                            <span class="chat-message-time">@message.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <div class="chat-message-text">
+                            @message.Text
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- ✅ КОНТЕКСТНОЕ МЕНЮ (ПКМ) -->
+        <div id="contextMenu" class="context-menu" style="display: none;">
+            <div class="context-menu-item" onclick="deleteMessage()">
+                <span class="context-menu-icon">🗑️</span>
+                <span>Удалить</span>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form id="messageForm" class="d-flex w-100 gap-2">
+                <input type="hidden" id="groupId" value="@groupId" />
+                <textarea id="messageInput" class="chat-input" placeholder="Введите сообщение..." rows="1" required></textarea>
+                <button type="submit" class="btn btn-primary" id="sendBtn">
+                    Отправить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .context-menu {
+        position: fixed;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+        z-index: 9999;
+        min-width: 150px;
+        overflow: hidden;
+    }
+
+    .context-menu-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-primary);
+        transition: background-color 0.2s;
+    }
+
+        .context-menu-item:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent-danger);
+        }
+
+    .context-menu-icon {
+        font-size: 1.2em;
+    }
+
+    .chat-message {
+        cursor: context-menu;
+    }
+
+        .chat-message[data-is-own="true"]:hover {
+            outline: 2px solid var(--accent-danger);
+            outline-offset: 2px;
+        }
+
+    .chat-message {
+        max-width: 60% !important;
+        padding: 10px 14px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .chat-message-text {
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        max-width: 100% !important;
+    }
+
+    .chat-input-container {
+        padding: 15px !important;
+    }
+
+    .chat-input {
+        max-height: 120px !important;
+        overflow-y: auto !important;
+        resize: none !important;
+    }
+
+    #connectionStatus {
+        transition: all 0.3s ease;
+    }
+
+        #connectionStatus.connected {
+            background-color: rgba(35, 134, 54, 0.2);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        #connectionStatus.error {
+            background-color: rgba(218, 54, 51, 0.2);
+            border-color: var(--accent-danger);
+            color: var(--accent-danger);
+        }
+</style>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+                .build();
+
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const messageForm = document.getElementById('messageForm');
+            const sendBtn = document.getElementById('sendBtn');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const groupIdInput = document.getElementById('groupId');
+            const contextMenu = document.getElementById('contextMenu');
+            const connectionStatus = document.getElementById('connectionStatus');
+
+            const groupId = parseInt(groupIdInput.value);
+            const currentUserId = "@currentUserId";
+            let messageCount = @Model.Count();
+            const batchSize = 50;
+            let isLoading = false;
+            let selectedMessageId = null;
+
+            console.log("🔹 Current User ID:", currentUserId);
+            console.log("🔹 Group ID:", groupId);
+
+            // ✅ Статус подключения
+            connection.onclose(() => {
+                connectionStatus.className = 'alert alert-danger py-2 mb-3';
+                connectionStatus.innerHTML = '<small>❌ Отключено от чата. Перезагрузите страницу.</small>';
+            });
+
+            connection.onreconnecting(() => {
+                connectionStatus.className = 'alert alert-warning py-2 mb-3';
+                connectionStatus.innerHTML = '<small>🔄 Переподключение...</small>';
+            });
+
+            connection.onreconnected(() => {
+                connectionStatus.className = 'alert alert-success py-2 mb-3 connected';
+                connectionStatus.innerHTML = '<small>✅ Подключено</small>';
+            });
+
+            // ✅ ПКМ по сообщению
+            document.addEventListener('contextmenu', function(e) {
+                const messageElement = e.target.closest('.chat-message');
+                if (messageElement && messageElement.dataset.isOwn === 'true') {
+                    e.preventDefault();
+                    selectedMessageId = messageElement.dataset.messageId;
+
+                    contextMenu.style.display = 'block';
+                    contextMenu.style.left = e.pageX + 'px';
+                    contextMenu.style.top = e.pageY + 'px';
+                } else {
+                    hideContextMenu();
+                }
+            });
+
+            document.addEventListener('click', function() {
+                hideContextMenu();
+            });
+
+            document.addEventListener('scroll', function() {
+                hideContextMenu();
+            });
+
+            // ✅ Enter - отправить, Shift+Enter - новая строка
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    messageForm.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // ✅ ПОЛУЧЕНИЕ НОВОГО СООБЩЕНИЯ
+            connection.on("ReceiveMessage", function(message) {
+                console.log("📩 Получено сообщение:", message);
+
+                const isOwn = message.senderId === currentUserId;
+
+                const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+                if (existingMessage) {
+                    return;
+                }
+
+                const messageHtml = createMessageHtml(message, isOwn);
+                chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                messageCount++;
+            });
+
+            connection.on("ReceiveMessages", function(messages) {
+                if (messages.length === 0) {
+                    loadMoreContainer.style.display = 'none';
+                    return;
+                }
+
+                messages.reverse().forEach(function(message) {
+                    const isOwn = message.senderId === currentUserId;
+                    const messageHtml = createMessageHtml(message, isOwn);
+                    chatMessages.insertAdjacentHTML('afterbegin', messageHtml);
+                });
+
+                messageCount += messages.length;
+                isLoading = false;
+
+                if (messages.length < batchSize) {
+                    loadMoreContainer.style.display = 'none';
+                }
+            });
+
+            connection.on("MessageDeleted", function(messageId) {
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.style.opacity = '0';
+                    messageElement.style.transform = 'scale(0.8)';
+                    setTimeout(() => messageElement.remove(), 300);
+                }
+            });
+
+            connection.on("Error", function(error) {
+                console.error("❌ SignalR ошибка:", error);
+                alert("Ошибка: " + error);
+            });
+
+            // ✅ УДАЛЕНИЕ СООБЩЕНИЯ
+            window.deleteMessage = async function() {
+                hideContextMenu();
+                if (!selectedMessageId) return;
+
+                if (!confirm('Удалить сообщение?')) {
+                    return;
+                }
+
+                try {
+                    await connection.invoke("DeleteMessage", parseInt(selectedMessageId));
+                } catch (err) {
+                    console.error("❌ Ошибка удаления:", err);
+                    alert("Не удалось удалить сообщение: " + err.message);
+                }
+                selectedMessageId = null;
+            };
+
+            // ✅ ОТПРАВКА СООБЩЕНИЯ
+            messageForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const text = messageInput.value.trim();
+                if (!text) return;
+
+                sendBtn.disabled = true;
+                sendBtn.textContent = '...';
+
+                try {
+                    await connection.invoke("SendMessage", groupId, text);
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                } catch (err) {
+                    console.error("❌ Ошибка отправки:", err);
+                    alert("Не удалось отправить сообщение: " + err.message);
+                } finally {
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Отправить';
+                }
+            });
+
+            loadMoreBtn.addEventListener('click', async function() {
+                if (isLoading) return;
+                isLoading = true;
+                loadMoreBtn.textContent = 'Загрузка...';
+
+                try {
+                    await connection.invoke("LoadMessages", groupId, messageCount, batchSize);
+                } catch (err) {
+                    console.error("❌ Ошибка загрузки:", err);
+                } finally {
+                    loadMoreBtn.textContent = 'Загрузить ещё сообщения';
+                }
+            });
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (messageCount >= batchSize) {
+                loadMoreContainer.style.display = 'block';
+            }
+
+            // ✅ ПОДКЛЮЧЕНИЕ
+            connection.start()
+                .then(function() {
+                    console.log("✅ SignalR подключён");
+                    connectionStatus.className = 'alert alert-success py-2 mb-3 connected';
+                    connectionStatus.innerHTML = '<small>✅ Подключено</small>';
+                    return connection.invoke("JoinGroup", groupId);
+                })
+                .then(function() {
+                    console.log("✅ Присоединён к группе");
+                })
+                .catch(function(err) {
+                    console.error("❌ SignalR ошибка:", err);
+                    connectionStatus.className = 'alert alert-danger py-2 mb-3';
+                    connectionStatus.innerHTML = '<small>❌ Ошибка подключения. Перезагрузите страницу.</small>';
+                });
+
+            function createMessageHtml(message, isOwn) {
+                const date = new Date(message.createdAt);
+                const dateStr = date.toLocaleDateString('ru-RU') + ' ' +
+                               date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+
+                const escapedSenderName = escapeHtml(message.senderName);
+                const escapedText = escapeHtml(message.text);
+
+                let html = '<div class="chat-message ' + (isOwn ? 'own' : 'other') + '" ';
+                html += 'data-message-id="' + message.id + '" ';
+                html += 'data-is-own="' + (isOwn ? 'true' : 'false') + '">';
+                html += '<div class="chat-message-header">';
+                html += '<span class="chat-message-sender">' + escapedSenderName + '</span>';
+                html += '<span class="chat-message-time">' + dateStr + '</span>';
+                html += '</div>';
+                html += '<div class="chat-message-text">' + escapedText + '</div>';
+                html += '</div>';
+                return html;
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function hideContextMenu() {
+                contextMenu.style.display = 'none';
+                selectedMessageId = null;
+            }
+
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            window.addEventListener('beforeunload', function() {
+                connection.invoke("LeaveGroup", groupId);
+                connection.stop();
+            });
+        });
+    </script>
+}

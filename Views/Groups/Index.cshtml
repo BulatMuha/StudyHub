@@ -1,0 +1,118 @@
+﻿@model IEnumerable<Diplom_StudyHub.Models.ViewModels.GroupListViewModel>
+@using Diplom_StudyHub.Models.Enums
+
+@{
+    ViewData["Title"] = "Группы";
+}
+
+<h1>Группы</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">
+        Создать группу
+    </a>
+</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-3">
+        <i class="bi bi-info-circle"></i> Групп пока нет. Создайте первую группу!
+    </div>
+}
+else
+{
+    <table class="table table-hover mt-3">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Статус</th>
+                <th>Владелец</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><strong>@Html.DisplayFor(modelItem => item.Name)</strong></td>
+                    <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                    <td>
+                        @if (item.Status == GroupStatus.Open)
+                        {
+                            <span class="badge badge-status-open">Открытая</span>
+                        }
+                        else if (item.Status == GroupStatus.Closed)
+                        {
+                            <span class="badge badge-status-closed">Закрытая</span>
+                        }
+                        else if (item.Status == GroupStatus.Archived)
+                        {
+                            <span class="badge badge-status-archived">Архив</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-status-blocked">Заблокирована</span>
+                        }
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.OwnerName)</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <!-- ✅ Кнопка "Подробнее" — видят ВСЕ -->
+                            <a asp-action="Details" asp-route-id="@item.Id"
+                               class="btn btn-sm btn-outline-info btn-action-details">
+                                Подробнее
+                            </a>
+
+                            <!-- ✅ Кнопки владельца — видит ТОЛЬКО владелец -->
+                            @if (item.IsOwner)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-primary btn-action-edit">
+                                    Изменить
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-danger btn-action-delete">
+                                    Удалить
+                                </a>
+                            }
+
+                            <!-- ✅ Кнопка "Вступить" — видят НЕ-участники (если группа открытая) -->
+                            @if (!item.IsMember && !item.IsOwner && item.Status == Diplom_StudyHub.Models.Enums.GroupStatus.Open)
+                            {
+                                <a asp-action="Join" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-success btn-action-join">
+                                    Вступить
+                                </a>
+                            }
+
+                            <!-- ✅ Кнопка "По коду" — для закрытых групп (не участники) -->
+                            @if (!item.IsMember && !item.IsOwner && item.Status == Diplom_StudyHub.Models.Enums.GroupStatus.Closed)
+                            {
+                                <a asp-action="JoinByCode" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-warning btn-action-joincode">
+                                    По коду
+                                </a>
+                            }
+
+                            <!-- ✅ Кнопка "Покинуть" — видят участники (не владельцы) -->
+                            @if (item.IsMember && !item.IsOwner)
+                            {
+                                <a asp-action="Leave" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-secondary btn-action-leave">
+                                    Покинуть
+                                </a>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ✅ ПАГИНАЦИЯ -->
+    @if (ViewBag.Pagination != null)
+    {
+        @await Html.PartialAsync("_Pagination", (Diplom_StudyHub.Models.ViewModels.PaginationViewModel)ViewBag.Pagination)
+    }
+}

@@ -1,0 +1,132 @@
+﻿@model IEnumerable<Diplom_StudyHub.Models.Lesson>
+@{
+    ViewData["Title"] = "Уроки";
+    var groupId = ViewBag.GroupId as int?;
+    var groupName = ViewBag.GroupName as string;
+}
+
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Уроки группы: @groupName</h1>
+        </div>
+        <div class="col text-end">
+            <a asp-action="Details" asp-controller="Groups" asp-route-id="@groupId" class="btn btn-secondary">
+                Назад к группе
+            </a>
+            <a asp-action="Create" asp-route-groupId="@groupId" class="btn btn-primary ms-2">
+                Создать урок
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="text-muted mb-0">В этой группе пока нет уроков</p>
+                <a asp-action="Create" asp-route-groupId="@groupId" class="btn btn-primary mt-2">
+                    Создать первый урок
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">@item.Title</h5>
+                            <p class="card-text text-muted">
+                                @(item.Description ?? "Описание отсутствует")
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Автор: @item.CreatedBy?.UserName |
+                                    Дата: @item.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group" role="group">
+                                <a asp-action="Details" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Подробнее
+                                </a>
+                                @if (User.Identity?.Name == item.CreatedBy?.UserName)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-warning">
+                                        Изменить
+                                    </a>
+                                    <form asp-action="Delete" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="groupId" value="@groupId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Удалить урок?')">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ✅ ПАГИНАЦИЯ -->
+        @if (ViewBag.Pagination != null && ViewBag.Pagination.TotalPages > 1)
+        {
+            <div class="pagination-container mt-3 mb-3">
+                <nav aria-label="Пагинация уроков">
+                    <ul class="pagination justify-content-center">
+                        <!-- Первая страница -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="1">
+                                Первая
+                            </a>
+                        </li>
+
+                        <!-- Предыдущая -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@(ViewBag.Pagination.CurrentPage - 1)">
+                                ← Назад
+                            </a>
+                        </li>
+
+                        <!-- Номера страниц -->
+                        @for (int i = 1; i <= ViewBag.Pagination.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == ViewBag.Pagination.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@i">
+                                    @i
+                                </a>
+                            </li>
+                        }
+
+                        <!-- Следующая -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == ViewBag.Pagination.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@(ViewBag.Pagination.CurrentPage + 1)">
+                                Вперёд →
+                            </a>
+                        </li>
+
+                        <!-- Последняя страница -->
+                        <li class="page-item @(ViewBag.Pagination.CurrentPage == ViewBag.Pagination.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-groupId="@groupId" asp-route-page="@ViewBag.Pagination.TotalPages">
+                                Последняя
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="text-center text-muted mb-3">
+                    <small>Страница @ViewBag.Pagination.CurrentPage из @ViewBag.Pagination.TotalPages (всего @ViewBag.Pagination.TotalItems уроков)</small>
+                </div>
+            </div>
+        }
+    }
+</div>

@@ -1,8 +1,90 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Главная";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- Hero Section -->
+<section class="hero">
+    <h1 class="hero-title">
+        StudyHub
+    </h1>
+    <p class="hero-subtitle">
+        Платформа для совместного обучения и развития.<br>
+        Создавай группы, делись знаниями, учись вместе с другими.
+    </p>
+    <div class="hero-actions">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-controller="Groups" asp-action="Index" class="btn btn-primary btn-lg">
+                Мои группы
+            </a>
+            <a asp-controller="Groups" asp-action="Create" class="btn btn-secondary btn-lg">
+                Создать группу
+            </a>
+        }
+        else
+        {
+            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg">
+                Начать сейчас
+            </a>
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-secondary btn-lg">
+                Войти
+            </a>
+        }
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <h2 class="section-title">Возможности платформы</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3 class="feature-title">Группы</h3>
+            <p class="feature-description">Создавай учебные группы, приглашай участников и управляй совместным обучением</p>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Чат</h3>
+            <p class="feature-description">Общайся с участниками группы в реальном времени, задавай вопросы и делись идеями</p>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Файлы</h3>
+            <p class="feature-description">Загружай и делись учебными материалами, документами и ресурсами</p>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Уроки</h3>
+            <p class="feature-description">Создавай структурированные уроки, добавляй материалы и отслеживай прогресс</p>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Видеозвонки</h3>
+            <p class="feature-description">Проводи онлайн-встречи и занятия прямо в платформе с помощью Jitsi Meet</p>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Уведомления</h3>
+            <p class="feature-description">Получай уведомления о новых сообщениях, событиях и важных обновлениях</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <h2 class="cta-title">Готов начать обучение?</h2>
+    <p class="cta-description">
+        Присоединяйся, создавай группы и начинай учиться уже сегодня
+    </p>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-controller="Groups" asp-action="Index" class="btn btn-primary btn-lg">
+            Перейти к группам
+        </a>
+    }
+    else
+    {
+        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg">
+            Зарегистрироваться
+        </a>
+    }
+</section>

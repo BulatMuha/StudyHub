@@ -1,0 +1,80 @@
+﻿@model IEnumerable<Diplom_StudyHub.Models.Notification>
+
+@{
+    ViewData["Title"] = "Уведомления";
+}
+
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Уведомления</h1>
+        </div>
+        <div class="col text-end">
+            @if (Model.Any(n => !n.IsRead))
+            {
+                <form asp-action="MarkAllAsRead" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success">
+                        Отметить всё как прочитанное
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="text-muted mb-0">У вас нет уведомлений</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="notifications-list">
+            @foreach (var notification in Model)
+            {
+                <div class="notification-card @(notification.IsRead ? "read" : "unread")">
+                    <div class="notification-card-header">
+                        <span class="notification-card-title">
+                            @if (notification.Type == "success")
+                            {
+                                <span class="text-success me-1">✓</span>
+                            }
+                            else if (notification.Type == "warning")
+                            {
+                                <span class="text-warning me-1">⚠</span>
+                            }
+                            else if (notification.Type == "danger")
+                            {
+                                <span class="text-danger me-1">✕</span>
+                            }
+                            else
+                            {
+                                <span class="text-info me-1">ℹ</span>
+                            }
+                            @notification.Title
+                        </span>
+                        <span class="notification-card-time">
+                            @notification.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                        </span>
+                    </div>
+                    <div class="notification-card-body">
+                        @notification.Message
+                    </div>
+                    @if (!notification.IsRead)
+                    {
+                        <div class="notification-card-status">
+                            <form asp-action="MarkAsRead" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@notification.Id" />
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    Отметить как прочитанное
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

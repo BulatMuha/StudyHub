@@ -1,0 +1,65 @@
+﻿@model Diplom_StudyHub.Models.Group
+
+@{
+    ViewData["Title"] = "Редактировать группу";
+}
+
+<h1>Редактировать группу</h1>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <div class="form-group">
+                        <label asp-for="Name" class="form-label">Название группы</label>
+                        <input asp-for="Name" class="form-control" placeholder="Например: Математика 101" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label asp-for="Description" class="form-label">Описание</label>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Опишите цели и задачи группы..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label asp-for="AvatarUrl" class="form-label">URL аватарки</label>
+                        <input asp-for="AvatarUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                        <span asp-validation-for="AvatarUrl" class="text-danger"></span>
+                        <small class="form-text">Оставьте пустым для аватарки по умолчанию</small>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="form-label">Статус группы </label>
+                        <select name="Status" class="form-control" required>
+                            <option value="0">Открытая</option>
+                            <option value="1">Закрытая</option>
+                            <option value="2">Архив (только чтение)</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            Архив — нельзя добавлять новый контент
+                        </small>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Сохранить изменения
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary btn-lg ms-2">
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

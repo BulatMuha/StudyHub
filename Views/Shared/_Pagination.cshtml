@@ -1,0 +1,32 @@
+﻿@model Diplom_StudyHub.Models.ViewModels.PaginationViewModel
+
+@if (Model.TotalPages > 1)
+{
+    <div class="pagination-container mt-3 mb-3">
+        <nav aria-label="Пагинация">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="1">Первая</a>
+                </li>
+                <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@(Model.CurrentPage - 1)">← Назад</a>
+                </li>
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-route-page="@i">@i</a>
+                    </li>
+                }
+                <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@(Model.CurrentPage + 1)">Вперёд →</a>
+                </li>
+                <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@Model.TotalPages">Последняя</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="text-center text-muted mb-3">
+            <small>Страница @Model.CurrentPage из @Model.TotalPages (всего @Model.TotalItems)</small>
+        </div>
+    </div>
+}
