@@ -1,47 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Diplom_StudyHub.Data;
+﻿using Diplom_StudyHub.Data;
 using Diplom_StudyHub.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Diplom_StudyHub.Models.ViewModels;
 using Diplom_StudyHub.Models.Enums;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Diplom_StudyHub.Controllers
 {
-    [Authorize]
-    public class GroupsController : Controller
+    public class GroupsController : BaseController
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-
         public GroupsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+            : base(context, userManager)
         {
-            _context = context;
-            _userManager = userManager;
         }
 
-        // ✅ ПАГИНАЦИЯ (10 групп на страницу)
-        // ✅ ПАГИНАЦИЯ + ПРОВЕРКА ПРАВ (10 групп на страницу)
-        public async Task<IActionResult> Index(int page = 1)
+        public async Task<IActionResult> Index(int page = 1, string searchQuery = "", string statusFilter = "")
         {
-            int pageSize = 10;
-
-            var groups = await _context.Groups
-                .Include(g => g.Owner)
-                .Include(g => g.Members)
-                .OrderByDescending(g => g.CreatedAt)
-                .ToListAsync();
-
-            var user = await _userManager.GetUserAsync(User);
+            int pageSize = 12;
+            var user = await GetCurrentUserAsync();
             var userId = user?.Id;
 
-            var groupViewModels = groups.Select(g => new GroupListViewModel
+            var query = _context.Groups
+                .Include(g => g.Owner)
+                .Include(g => g.Members)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(g => g.Name.Contains(searchQuery) ||
+                                        (g.Description != null && g.Description.Contains(searchQuery)));
+            }
+
+            if (!string.IsNullOrEmpty(statusFilter) && Enum.TryParse<GroupStatus>(statusFilter, out var status))
+            {
+                query = query.Where(g => g.Status == status);
+            }
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            var groups = await query
+                .OrderByDescending(g => g.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var viewModels = groups.Select(g => new GroupListViewModel
             {
                 Id = g.Id,
                 Name = g.Name,
@@ -54,14 +62,6 @@ namespace Diplom_StudyHub.Controllers
                 IsMember = userId != null && g.Members.Any(m => m.UserId == userId)
             }).ToList();
 
-            var totalItems = groupViewModels.Count;
-            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-            var paginatedGroups = groupViewModels
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
             ViewBag.Pagination = new PaginationViewModel
             {
                 CurrentPage = page,
@@ -70,9 +70,11 @@ namespace Diplom_StudyHub.Controllers
                 ItemsPerPage = pageSize
             };
 
-            return View(paginatedGroups);
-        }
+            ViewBag.SearchQuery = searchQuery;
+            ViewBag.StatusFilter = statusFilter;
 
+            return View(viewModels);
+        }
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -80,11 +82,11 @@ namespace Diplom_StudyHub.Controllers
             var group = await _context.Groups
                 .Include(g => g.Owner)
                 .Include(g => g.Members)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(g => g.Id == id);
 
             if (group == null) return NotFound();
 
-            var user = await _userManager.GetUserAsync(User);
+            var user = await GetCurrentUserAsync();
 
             var viewModel = new GroupDetailsViewModel
             {
@@ -109,109 +111,81 @@ namespace Diplom_StudyHub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateGroupViewModel model)
         {
-            // ✅ ОТЛАДКА: выводим ошибки валидации
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await GetCurrentUserAsync();
+            if (user == null) return NotFound();
+
+            var newGroup = new Group
             {
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    System.Diagnostics.Debug.WriteLine($"❌ Validation Error: {error.ErrorMessage}");
-                }
-            }
+                Name = model.Name,
+                Description = model.Description,
+                AvatarUrl = model.AvatarUrl,
+                Status = GroupStatus.Open,
+                CreatedAt = DateTime.UtcNow,
+                OwnerId = user.Id,
+                InviteCode = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()
+            };
 
-            if (ModelState.IsValid)
+            _context.Groups.Add(newGroup);
+            await _context.SaveChangesAsync();
+
+            _context.GroupMembers.Add(new GroupMember
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null) return NotFound();
+                GroupId = newGroup.Id,
+                UserId = user.Id,
+                Role = GroupMemberRole.Owner,
+                JoinedAt = DateTime.UtcNow
+            });
 
-                try
-                {
-                    var newgroup = new Group
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        AvatarUrl = model.AvatarUrl,
-                        Status = GroupStatus.Open,
-                        CreatedAt = DateTime.Now,
-                        OwnerId = user.Id,
-                        InviteCode = Guid.NewGuid().ToString().Substring(0, 8)
-                    };
+            await _context.SaveChangesAsync();
 
-                    _context.Add(newgroup);
-                    await _context.SaveChangesAsync();
-
-                    _context.GroupMembers.Add(new GroupMember
-                    {
-                        GroupId = newgroup.Id,
-                        UserId = user.Id,
-                        Role = GroupMemberRole.Owner,
-                        JoinedAt = DateTime.Now
-                    });
-                    await _context.SaveChangesAsync();
-
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"❌ Exception: {ex.Message}");
-                    ModelState.AddModelError("", $"Ошибка: {ex.Message}");
-                }
-            }
-            return View(model);
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
+
             var group = await _context.Groups.FindAsync(id);
             if (group == null) return NotFound();
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null || group.OwnerId != user.Id) return Forbid();
+            if (!await IsGroupOwnerAsync(group.Id)) return Forbid();
 
             return View(group);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Status,AvatarUrl")] Group group)
+        public async Task<IActionResult> Edit(int id, Group group)
         {
             if (id != group.Id) return NotFound();
 
-            var user = await _userManager.GetUserAsync(User);
             var existingGroup = await _context.Groups.FindAsync(id);
+            if (existingGroup == null) return NotFound();
 
-            if (user == null || existingGroup == null || existingGroup.OwnerId != user.Id) return Forbid();
+            if (!await IsGroupOwnerAsync(id)) return Forbid();
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    existingGroup.Name = group.Name;
-                    existingGroup.Description = group.Description;
-                    existingGroup.Status = group.Status;
-                    existingGroup.AvatarUrl = group.AvatarUrl;
+                existingGroup.Name = group.Name;
+                existingGroup.Description = group.Description;
+                existingGroup.AvatarUrl = group.AvatarUrl;
+                existingGroup.Status = group.Status;
 
-                    _context.Update(existingGroup);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!GroupExists(group.Id)) return NotFound();
-                    else throw;
-                }
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(group);
         }
 
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
-            var group = await _context.Groups.Include(g => g.Owner).FirstOrDefaultAsync(m => m.Id == id);
+            var group = await _context.Groups.FindAsync(id);
             if (group == null) return NotFound();
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null || group.OwnerId != user.Id) return Forbid();
+            if (!await IsGroupOwnerAsync(group.Id)) return Forbid();
 
             return View(group);
         }
@@ -221,51 +195,40 @@ namespace Diplom_StudyHub.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var group = await _context.Groups.FindAsync(id);
-            if (group != null)
+            if (group != null && await IsGroupOwnerAsync(id))
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null || group.OwnerId != user.Id) return Forbid();
-
                 _context.Groups.Remove(group);
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
         }
-        // ✅ Вступить в группу
+
         public async Task<IActionResult> Join(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await GetCurrentUserAsync();
             if (user == null) return NotFound();
+
+            if (await IsGroupMemberAsync(id))
+                return RedirectToAction(nameof(Index));
 
             var group = await _context.Groups.FindAsync(id);
             if (group == null) return NotFound();
 
-            // Проверка: уже участник?
-            var existingMember = await _context.GroupMembers
-                .FirstOrDefaultAsync(m => m.GroupId == id && m.UserId == user.Id);
-
-            if (existingMember != null)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            // Добавляем участника
             _context.GroupMembers.Add(new GroupMember
             {
                 GroupId = id,
                 UserId = user.Id,
                 Role = GroupMemberRole.Member,
-                JoinedAt = DateTime.Now
+                JoinedAt = DateTime.UtcNow
             });
-            await _context.SaveChangesAsync();
 
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        // ✅ Покинуть группу
         public async Task<IActionResult> Leave(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await GetCurrentUserAsync();
             if (user == null) return NotFound();
 
             var member = await _context.GroupMembers
@@ -279,31 +242,5 @@ namespace Diplom_StudyHub.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // ✅ Вступить по коду (для закрытых групп) — ПЕРЕАДРЕСАЦИЯ НА ФОРМУ ВВОДА
-        public async Task<IActionResult> JoinByCode(int id)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return NotFound();
-
-            var group = await _context.Groups.FindAsync(id);
-            if (group == null) return NotFound();
-
-            // Проверка: уже участник?
-            var existingMember = await _context.GroupMembers
-                .FirstOrDefaultAsync(m => m.GroupId == id && m.UserId == user.Id);
-
-            if (existingMember != null)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            // Передаём groupId во ViewBag и показываем форму ввода кода
-            // Предполагаем что есть View: Views/GroupMembers/Join.cshtml
-            ViewBag.GroupId = id;
-            ViewBag.GroupName = group.Name;
-            return View("~/Views/GroupMembers/Join.cshtml");
-        }
-        private bool GroupExists(int id) => _context.Groups.Any(e => e.Id == id);
     }
 }

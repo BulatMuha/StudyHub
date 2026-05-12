@@ -4,30 +4,54 @@
     ViewData["Title"] = "Группа: " + Model.Name;
 }
 
-<h1>@Model.Name</h1>
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index">Группы</a></li>
+                    <li class="breadcrumb-item active">@Model.Name</li>
+                </ol>
+            </nav>
+            <h1>@Model.Name</h1>
+        </div>
+        <div class="col text-end">
+            <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+        </div>
+    </div>
 
-<div class="card">
-    <div class="card-body">
-        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
-        {
-            <div class="text-center mb-3">
-                <img src="@Model.AvatarUrl" alt="Аватар группы" class="img-thumbnail" style="max-width: 200px;" />
-            </div>
-        }
+    <div class="row">
+        <!-- Левая колонка - Информация -->
+        <div class="col-lg-4 mb-4">
+            <div class="card group-details-card">
+                @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                {
+                    <div class="avatar-wrapper">
+                        <img src="@Model.AvatarUrl" alt="@Model.Name" />
+                    </div>
+                }
+                else
+                {
+                    <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <h1 class="text-white mb-0">@Model.Name.Substring(0, Math.Min(2, Model.Name.Length)).ToUpper()</h1>
+                    </div>
+                }
 
-        <div class="row">
-            <div class="col-md-6">
-                <h5>Описание</h5>
-                <p>@(Model.Description ?? "Описание отсутствует")</p>
-            </div>
-
-            <div class="col-md-6">
-                <h5>Информация</h5>
-                <ul class="list-unstyled">
-                    <li><strong>Владелец:</strong> @Model.OwnerName</li>
-                    <li><strong>Создана:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</li>
-                    <li><strong>Участников:</strong> @Model.MemberCount</li>
-                    <li>
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Информация о группе</h5>
+                    <div class="mb-3">
+                        <strong>Владелец:</strong>
+                        <p class="mb-0">@Model.OwnerName</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Создана:</strong>
+                        <p class="mb-0">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Участников:</strong>
+                        <p class="mb-0">@Model.MemberCount</p>
+                    </div>
+                    <div class="mb-3">
                         <strong>Статус:</strong>
                         @if (Model.Status == Diplom_StudyHub.Models.Enums.GroupStatus.Open)
                         {
@@ -41,40 +65,96 @@
                         {
                             <span class="badge badge-status-archived">Архив</span>
                         }
-                        else
-                        {
-                            <span class="badge badge-status-blocked">Заблокирована</span>
-                        }
-                    </li>
-                </ul>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.InviteCode))
+                    {
+                        <div class="alert alert-info">
+                            <strong>Код приглашения:</strong>
+                            <div class="d-flex align-items-center mt-2">
+                                <code class="flex-grow-1 fs-5">@Model.InviteCode</code>
+                                <button class="btn btn-sm btn-primary ms-2"
+                                        onclick="navigator.clipboard.writeText('@Model.InviteCode'); alert('Код скопирован!')">
+                                    Копировать
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
 
-        @if (!string.IsNullOrEmpty(Model.InviteCode))
-        {
-            <div class="alert alert-info mt-3">
-                <strong>Код приглашения:</strong>
-                <code>@Model.InviteCode</code>
-                <button class="btn btn-sm btn-outline-primary ms-2" onclick="navigator.clipboard.writeText('@Model.InviteCode')">Копировать</button>
+        <!-- Правая колонка - Действия -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Описание</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">@(Model.Description ?? "Описание отсутствует")</p>
+                </div>
             </div>
-        }
 
-        <div class="mt-3">
-            <a asp-action="Join" asp-controller="GroupMembers" class="btn btn-success">Вступить в группу</a>
-            <a asp-action="Index" asp-controller="GroupMembers" asp-route-groupId="@Model.Id" class="btn btn-info">Участники (@Model.MemberCount)</a>
-            <a asp-action="Index" asp-controller="Messages" asp-route-groupId="@Model.Id" class="btn btn-primary">Чат</a>
-            <a asp-action="Index" asp-controller="Documents" asp-route-groupId="@Model.Id" class="btn btn-warning">Файлы</a>
-            <a asp-action="Index" asp-controller="Lessons" asp-route-groupId="@Model.Id" class="btn btn-success">Уроки</a>
-            <a asp-action="Index" asp-controller="Meet" asp-route-groupId="@Model.Id" class="btn btn-danger">Видеозвонок</a>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <a asp-controller="Messages" asp-action="Index" asp-route-groupId="@Model.Id"
+                       class="card h-100 hover-card text-decoration-none">
+                        <div class="card-body text-center p-4">
+                            <h5>💬 Чат группы</h5>
+                            <p class="text-muted small">Общение в реальном времени</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a asp-controller="Documents" asp-action="Index" asp-route-groupId="@Model.Id"
+                       class="card h-100 hover-card text-decoration-none">
+                        <div class="card-body text-center p-4">
+                            <h5>📁 Файлы</h5>
+                            <p class="text-muted small">Документы и материалы</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a asp-controller="Lessons" asp-action="Index" asp-route-groupId="@Model.Id"
+                       class="card h-100 hover-card text-decoration-none">
+                        <div class="card-body text-center p-4">
+                            <h5>📚 Уроки</h5>
+                            <p class="text-muted small">Учебные материалы</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a asp-controller="GroupMembers" asp-action="Index" asp-route-groupId="@Model.Id"
+                       class="card h-100 hover-card text-decoration-none">
+                        <div class="card-body text-center p-4">
+                            <h5>👥 Участники</h5>
+                            <p class="text-muted small">@Model.MemberCount человек</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a asp-controller="Meet" asp-action="Index" asp-route-groupId="@Model.Id"
+                       class="card h-100 hover-card text-decoration-none">
+                        <div class="card-body text-center p-4">
+                            <h5>🎥 Видеозвонок</h5>
+                            <p class="text-muted small">Jitsi Meet</p>
+                        </div>
+                    </a>
+                </div>
+
+                @if (Model.IsOwner)
+                {
+                    <div class="col-md-6">
+                        <a asp-action="Edit" asp-route-id="@Model.Id"
+                           class="card h-100 hover-card text-decoration-none">
+                            <div class="card-body text-center p-4">
+                                <h5>⚙️ Настройки группы</h5>
+                                <p class="text-muted small">Управление</p>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
         </div>
     </div>
-</div>
-
-<div class="mt-3">
-    @if (Model.IsOwner)
-    {
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактировать</a>
-        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">Удалить</a>
-    }
-    <a asp-action="Index" asp-controller="Groups" class="btn btn-secondary">Назад к списку</a>
 </div>

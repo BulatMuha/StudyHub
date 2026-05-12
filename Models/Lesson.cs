@@ -14,32 +14,32 @@ namespace Diplom_StudyHub.Models
 
         [Required]
         [StringLength(200)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [StringLength(1000)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Required]
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
 
         [StringLength(200)]
-        public string Topic { get; set; }
+        public string? Topic { get; set; }
 
         public DateTime? StartTime { get; set; }
-
         public DateTime? EndTime { get; set; }
 
         [Required]
-        public string CreatedByUserId { get; set; }
+        public string CreatedByUserId { get; set; } = string.Empty;
 
         [Required]
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public DateTime? UpdatedAt { get; set; }
 
         [ForeignKey("GroupId")]
-        public virtual Group Group { get; set; }
+        public virtual Group Group { get; set; } = null!;
 
         [ForeignKey("CreatedByUserId")]
-        public virtual ApplicationUser CreatedBy { get; set; }
+        public virtual ApplicationUser CreatedBy { get; set; } = null!;
     }
 }

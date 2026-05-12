@@ -171,3 +171,30 @@ document.head.appendChild(style);
 console.log('%c> Diplom_StudyHub', 'color: #238636; font-size: 24px; font-weight: bold; font-family: monospace;');
 console.log('%cLearning Environment', 'color: #8b949e; font-size: 12px; font-family: monospace;');
 console.log('%cVersion 1.0.0', 'color: #6e7681; font-size: 10px; font-family: monospace;');
+
+// ============================================
+// Глобальные улучшения
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Авто-скрытие alert
+    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.4s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 400);
+        }, 6000);
+    });
+
+    // Подтверждение опасных действий
+    document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            if (!confirm('Вы уверены? Это действие нельзя отменить.')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    console.log('%cStudyHub успешно загружен', 'color: #238636; font-weight: bold;');
+});

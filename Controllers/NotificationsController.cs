@@ -1,33 +1,24 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Diplom_StudyHub.Data;
+using Diplom_StudyHub.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Diplom_StudyHub.Data;
-using Diplom_StudyHub.Models;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Diplom_StudyHub.Controllers
 {
-    [Authorize]
-    public class NotificationsController : Controller
+    public class NotificationsController : BaseController
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-
         public NotificationsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+            : base(context, userManager)
         {
-            _context = context;
-            _userManager = userManager;
         }
+
         public async Task<IActionResult> Index()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var user = await GetCurrentUserAsync();
+            if (user == null) return NotFound();
 
             var notifications = await _context.Notifications
                 .Where(n => n.UserId == user.Id)
@@ -41,44 +32,36 @@ namespace Diplom_StudyHub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var user = await GetCurrentUserAsync();
+            if (user == null) return NotFound();
 
             var notification = await _context.Notifications.FindAsync(id);
             if (notification == null || notification.UserId != user.Id)
-            {
                 return NotFound();
-            }
 
             notification.IsRead = true;
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkAllAsRead()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var user = await GetCurrentUserAsync();
+            if (user == null) return NotFound();
 
             var notifications = await _context.Notifications
                 .Where(n => n.UserId == user.Id && !n.IsRead)
                 .ToListAsync();
 
-            foreach (var notification in notifications)
-            {
-                notification.IsRead = true;
-            }
+            foreach (var n in notifications)
+                n.IsRead = true;
+
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

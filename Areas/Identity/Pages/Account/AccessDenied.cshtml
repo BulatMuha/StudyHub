@@ -1,0 +1,29 @@
+﻿@page
+@model Diplom_StudyHub.Areas.Identity.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Доступ запрещён";
+}
+
+<div class="container main-content mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body py-5">
+                    <h1 class="text-danger display-1 mb-4">403</h1>
+                    <h2 class="card-title mb-3">Доступ запрещён</h2>
+                    <p class="card-text text-muted mb-4">
+                        У вас нет прав для доступа к этой странице.
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a asp-action="Index" asp-controller="Home" class="btn btn-primary">
+                            На главную
+                        </a>
+                        <a asp-action="Index" asp-controller="Groups" class="btn btn-secondary">
+                            К группам
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

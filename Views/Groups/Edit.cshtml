@@ -1,65 +1,89 @@
 ﻿@model Diplom_StudyHub.Models.Group
-
 @{
-    ViewData["Title"] = "Редактировать группу";
+    ViewData["Title"] = "Редактирование группы";
 }
 
-<h1>Редактировать группу</h1>
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Настройки группы</h1>
+        </div>
+        <div class="col text-end">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Назад</a>
+        </div>
+    </div>
 
-<div class="card mt-4">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-8">
-                <form asp-action="Edit">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    
-                    <input type="hidden" asp-for="Id" />
-                    
-                    <div class="form-group">
-                        <label asp-for="Name" class="form-label">Название группы</label>
-                        <input asp-for="Name" class="form-control" placeholder="Например: Математика 101" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Основная информация</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Название группы</label>
+                            <input asp-for="Name" class="form-control" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Описание</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="AvatarUrl" class="form-label">URL аватара</label>
+                            <input asp-for="AvatarUrl" class="form-control" />
+                            <small class="form-text text-muted">Оставьте пустым для использования инициалов</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Status" class="form-label">Статус группы</label>
+                            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<Diplom_StudyHub.Models.Enums.GroupStatus>()"></select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Код приглашения</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <code class="fs-4">@Model.InviteCode</code>
                     </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="Description" class="form-label">Описание</label>
-                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Опишите цели и задачи группы..."></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="AvatarUrl" class="form-label">URL аватарки</label>
-                        <input asp-for="AvatarUrl" class="form-control" placeholder="https://example.com/image.jpg" />
-                        <span asp-validation-for="AvatarUrl" class="text-danger"></span>
-                        <small class="form-text">Оставьте пустым для аватарки по умолчанию</small>
-                    </div>
-                    
-                    <div class="form-group mb-3">
-                        <label class="form-label">Статус группы </label>
-                        <select name="Status" class="form-control" required>
-                            <option value="0">Открытая</option>
-                            <option value="1">Закрытая</option>
-                            <option value="2">Архив (только чтение)</option>
-                        </select>
-                        <small class="form-text text-muted">
-                            Архив — нельзя добавлять новый контент
-                        </small>
-                    </div>
-                    
-                    <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            Сохранить изменения
+                    <button class="btn btn-sm btn-primary w-100 mb-2" onclick="navigator.clipboard.writeText('@Model.InviteCode'); alert('Скопировано!')">
+                        Копировать код
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Опасная зона</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">После удаления группу невозможно восстановить</p>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Вы уверены? Это действие нельзя отменить!');">
+                        <button type="submit" class="btn btn-danger w-100">
+                            Удалить группу
                         </button>
-                        <a asp-action="Index" class="btn btn-secondary btn-lg ms-2">
-                            Отмена
-                        </a>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

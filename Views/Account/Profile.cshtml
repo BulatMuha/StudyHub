@@ -1,0 +1,116 @@
+﻿@model Diplom_StudyHub.Models.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Профиль";
+    var displayName = !string.IsNullOrEmpty(Model.FirstName) || !string.IsNullOrEmpty(Model.LastName)
+        ? $"{Model.LastName} {Model.FirstName}".Trim()
+        : Model.UserName;
+}
+
+<div class="container main-content mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Профиль пользователя</h1>
+        </div>
+        <div class="col text-end">
+            @if (Model.Id != User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+            {
+                <a asp-action="Profile" class="btn btn-secondary">Мой профиль</a>
+            }
+        </div>
+    </div>
+
+    <div class="profile-header">
+        @if (!string.IsNullOrEmpty(Model.FirstName) || !string.IsNullOrEmpty(Model.LastName))
+        {
+            <div class="profile-avatar default">
+                @($"{(Model.FirstName?.FirstOrDefault() ?? Model.LastName?.FirstOrDefault() ?? 'U').ToString().ToUpper()}")
+            </div>
+        }
+        else
+        {
+            <div class="profile-avatar default">
+                @Model.UserName.FirstOrDefault().ToString().ToUpper()
+            </div>
+        }
+
+        <h2 class="profile-name">@displayName</h2>
+        <p class="profile-email">@Model.Email</p>
+
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <div class="profile-stat-value">@Model.OwnedGroupsCount</div>
+                <div class="profile-stat-label">Своих групп</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-value">@Model.MemberGroupsCount</div>
+                <div class="profile-stat-label">В группах</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-value">@Model.MessagesCount</div>
+                <div class="profile-stat-label">Сообщений</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Личная информация</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Имя:</strong>
+                        <p class="mb-0">@(Model.FirstName ?? "Не указано")</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Фамилия:</strong>
+                        <p class="mb-0">@(Model.LastName ?? "Не указано")</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Телефон:</strong>
+                        <p class="mb-0">@(Model.PhoneNumber ?? "Не указан")</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Дата рождения:</strong>
+                        <p class="mb-0">@(Model.DateOfBirth?.ToString("dd.MM.yyyy") ?? "Не указана")</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Пол:</strong>
+                        <p class="mb-0">
+                            @(Model.Gender == Diplom_StudyHub.Models.Enums.Gender.Male ? "Мужской" :
+                                                        Model.Gender == Diplom_StudyHub.Models.Enums.Gender.Female ? "Женский" :
+                                                        "Не указан")
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>На сайте с:</strong>
+                        <p class="mb-0">@Model.MemberSince</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Действия</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Id == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                    {
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-primary w-100 mb-2">
+                            Настройки аккаунта
+                        </a>
+                        <a asp-area="Identity" asp-page="/Account/Manage/ChangePassword" class="btn btn-outline-secondary w-100 mb-2">
+                            Сменить пароль
+                        </a>
+                    }
+                    <a asp-action="Index" asp-controller="Groups" class="btn btn-outline-primary w-100">
+                        Мои группы
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

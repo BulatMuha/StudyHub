@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using Diplom_StudyHub.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Diplom_StudyHub.Controllers
@@ -26,7 +24,10 @@ namespace Diplom_StudyHub.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new Diplom_StudyHub.Models.ErrorViewModel
+            {
+                RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

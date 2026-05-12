@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Diplom_StudyHub")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ce31022637aee884b80c097cc9762b518a371016")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+42aeab541614392b84c1fe4adda10787af73772c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Diplom_StudyHub")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Diplom_StudyHub")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

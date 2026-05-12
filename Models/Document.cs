@@ -13,28 +13,28 @@ namespace Diplom_StudyHub.Models
         public int GroupId { get; set; }
 
         [Required]
-        public string UploaderId { get; set; }
+        public string UploaderId { get; set; } = string.Empty;
 
         [Required]
         [StringLength(255)]
-        public string FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         [Required]
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;
 
         [Required]
         public long FileSize { get; set; }
 
         [StringLength(500)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Required]
-        public DateTime UploadedAt { get; set; }
+        public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("GroupId")]
-        public virtual Group Group { get; set; }
+        public virtual Group Group { get; set; } = null!;
 
         [ForeignKey("UploaderId")]
-        public virtual ApplicationUser Uploader { get; set; }
+        public virtual ApplicationUser Uploader { get; set; } = null!;
     }
 }

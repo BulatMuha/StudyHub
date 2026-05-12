@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Diplom_StudyHub.Models.Enums;
 
 namespace Diplom_StudyHub.Models.ViewModels
 {
@@ -16,5 +17,8 @@ namespace Diplom_StudyHub.Models.ViewModels
         [StringLength(256)]
         [Display(Name = "Аватарка (URL)")]
         public string? AvatarUrl { get; set; }
+
+        [Display(Name = "Тип группы")]
+        public GroupStatus Status { get; set; } = GroupStatus.Open;
     }
 }
